@@ -272,19 +272,16 @@ static void buttons_update(struct Gestures* gs,
 	button_prev = hs->button;
 
 	if (integrated_down) {
-		int earliest, latest, lowest;
+		int earliest, latest;
 		gs->move_type = GS_NONE;
 		timeraddms(&gs->time, cfg->gesture_wait, &gs->move_wait);
 		earliest = -1;
 		latest = -1;
-		lowest = -1;
 		foreach_bit(i, ms->touch_used) {
 			if (!cfg->button_zones && GETBIT(ms->touch[i].flags, MT_INVALID))
 				continue;
 			if (cfg->button_integrated)
 				SETBIT(ms->touch[i].flags, MT_BUTTON); /* Mark all existing touches as physical button press */
-			if (lowest == -1 || ms->touch[i].y > ms->touch[lowest].y) /* The logic/naming seems to be inverted here */
-				lowest = i;
 			if (earliest == -1 || timercmp(&ms->touch[i].down, &ms->touch[earliest].down, <))
 				earliest = i;
 			if (latest == -1 || timercmp(&ms->touch[i].down, &ms->touch[latest].down, >))
@@ -292,7 +289,7 @@ static void buttons_update(struct Gestures* gs,
 		}
 
 		if (integrated_just_clicked) {
-			if (cfg->button_zones && lowest >= 0) {
+			if (cfg->button_zones && latest >= 0) {
 				int zones, left, right, pos;
 				double width;
 
@@ -306,7 +303,7 @@ static void buttons_update(struct Gestures* gs,
 
 				if (zones > 0) {
 					width = ((double)cfg->pad_width)/((double)zones);
-					pos = cfg->pad_width / 2 + ms->touch[lowest].x; /* Why not mean x of all touches? */
+					pos = cfg->pad_width / 2 + ms->touch[latest].x; /* Why not mean x of all touches? */
 					LOG_EMULATED("buttons_update: pad width %d, zones %d, zone width %f, x %d\n",
 						cfg->pad_width, zones, width, pos);
 					for (i = 0; i < zones; i++) {
